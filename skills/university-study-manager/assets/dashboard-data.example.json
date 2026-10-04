@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 2,
+  "semester": "2026-2027-1",
+  "totalWeeks": 18,
+  "modules": ["A", "B", "C", "G"],
+  "subtitle": "示例数据",
+  "coverage": "课表覆盖第1至18周；重要节点待补充。",
+  "scheduleCoverageComplete": true,
+  "schedulePendingItems": [],
+  "durationUnit": "periods",
+  "slotLabels": {
+    "1": "第一大节 08:00—09:40",
+    "2": "第二大节 10:05—11:45",
+    "3": "第三大节 14:00—15:40",
+    "4": "第四大节 16:05—17:45",
+    "5": "第五大节 19:00—20:40"
+  },
+  "metrics": [{"label": "课程", "value": "2", "note": "按已录入课程计"}],
+  "courses": [
+    {"id": "BIOCHEM", "name": "生物化学与分子生物学", "displayType": "normal", "summary": "示例课程", "details": [], "source": "示例课表"},
+    {"id": "LAB", "name": "综合实验技术训练", "displayType": "focus", "summary": "四小节连堂示例", "details": [], "source": "示例课表"}
+  ],
+  "schedule": [
+    {"courseId": "BIOCHEM", "day": 2, "slot": 2, "blockSpan": 1, "periodCount": 2, "band": "morning", "location": "九教南305", "startWeek": 1, "endWeek": 18, "parity": "all"},
+    {"courseId": "LAB", "day": 4, "slot": 3, "blockSpan": 2, "periodCount": 4, "band": "afternoon", "location": "生命科学楼B座实验中心402", "startWeek": 2, "endWeek": 16, "parity": "even"}
+  ],
+  "milestones": [],
+  "progress": [],
+  "sources": [{"file": "示例课表", "location": "课程安排", "note": "仅用于验证模板"}],
+  "gaps": "考试时间和截止事项待补充。"
+}

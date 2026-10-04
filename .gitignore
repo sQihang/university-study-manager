@@ -1,0 +1,15 @@
+# Keep credentials and local data out of a public repository.
+**/.private/
+**/.env
+**/.env.*
+!**/.env.example
+*.log
+
+# Do not commit real student workspaces or generated records.
+**/工作区.yaml
+**/归档说明.md
+**/_来源.json
+**/00-待整理/
+**/01-资料库/
+**/90-辅助数据/
+**/99-临时文件/

@@ -1,0 +1,4 @@
+interface:
+  display_name: "大学学业管理辅助"
+  short_description: "整理大学资料与课程记录，依据文件解读规则、生成自测题及客观学期规划"
+  default_prompt: "使用 $university-study-manager 整理我的学业资料。若未指定文件夹，先查看工作区的 00-待整理；按归档说明和简短方案整理。"

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>规则自测</title>
+  <style>
+    :root{color-scheme:light;--ink:#243248;--muted:#65758b;--line:#dbe4ef;--paper:#fff;--wash:#f4f7fb;--blue:#56789e;--blue2:#eaf1f8;--sage:#658779;--sage2:#edf4f0;--rose:#a8656f;--rose2:#f8edef}
+    *{box-sizing:border-box}body{margin:0;background:var(--wash);color:var(--ink);font:16px/1.65 system-ui,"Microsoft YaHei",sans-serif}
+    main{max-width:900px;margin:32px auto;padding:0 20px 64px}.paper{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:28px;box-shadow:0 8px 28px #38516d12}
+    h1{font-size:28px;margin:0 0 6px}.sub,.meta{color:var(--muted)}.meta-list{display:grid;gap:5px;margin:10px 0 0}.meta-row{display:grid;grid-template-columns:76px 1fr;gap:8px}.meta-row strong{color:var(--blue);font-weight:700;text-decoration:underline;text-decoration-color:#b8c8d8;text-underline-offset:3px}.bank-drop{display:flex;align-items:center;justify-content:space-between;gap:14px;border:2px dashed #b7c9da;border-radius:10px;background:var(--blue2);padding:13px 15px;margin:20px 0 10px;color:var(--muted)}.bank-drop.dragover{border-color:var(--blue);background:#dde9f4}.bank-drop p{margin:0;font-size:14px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 22px}.button,.file-label{border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);padding:8px 13px;cursor:pointer;font:inherit}.button:focus-visible,.file-label:focus-within,.bank-drop:focus-visible{outline:3px solid #b7c9da;outline-offset:2px}.primary{background:var(--blue);color:white;border-color:var(--blue)}button:disabled{opacity:.45;cursor:not-allowed}input[type=file]{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+    .status{padding:12px 14px;background:var(--blue2);border-radius:8px;margin:14px 0}.question{border-top:1px solid var(--line);padding:22px 0}.question h2{font-size:17px;margin:0 0 12px}.option{display:block;padding:7px 10px;margin:5px 0;border-radius:7px}.option:hover{background:var(--wash)}.result{margin-top:12px;padding:12px;border-left:4px solid var(--line);background:var(--wash)}.correct{border-color:var(--sage);background:var(--sage2)}.incorrect{border-color:var(--rose);background:var(--rose2)}.hidden{display:none}.empty{text-align:center;padding:42px 10px;color:var(--muted)}
+    .summary{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0}.summary strong{font-size:22px}.source{font-size:14px;color:var(--muted)}
+    @media(max-width:600px){main{margin:0;padding:0}.paper{border:0;border-radius:0;padding:20px;box-shadow:none}.bank-drop{display:block}.bank-drop .file-label{display:block;text-align:center;margin-top:10px}.toolbar>*{flex:1;text-align:center}}
+    @media print{body{background:#fff}.paper{border:0;box-shadow:none;padding:0}.bank-drop,.toolbar,.status,#summary{display:none!important}.question{break-inside:avoid}.result.hidden{display:none}}
+  </style>
+</head>
+<body>
+<main><section class="paper">
+  <h1 id="title">规则自测</h1>
+  <div id="meta" class="meta"><p>选择一个题库文件开始。<strong>题库不会上传到网络。</strong></p></div>
+  <div id="bankDrop" class="bank-drop" role="button" tabindex="0" aria-label="拖入题库文件，或按回车选择本地 JSON 题库">
+    <p><strong>把题库 JSON 拖到这里</strong><br>也可以使用右侧按钮选择；文件只在本机读取。</p>
+    <label class="file-label primary" title="选择由本 Skill 生成的 JSON 题库；文件只在本机浏览器中读取。" aria-label="选择题库：选择本地 JSON 题库，文件不会上传">选择题库<input id="bankFile" type="file" accept=".json,application/json"></label>
+  </div>
+  <div class="toolbar">
+    <label class="file-label" title="载入此前导出的答题记录，并恢复与当前题库匹配的答案和错题。" aria-label="导入答题记录：恢复当前题库的本地答题进度">导入答题记录<input id="recordFile" type="file" accept=".json,application/json"></label>
+    <button id="submit" class="button" disabled>提交答案</button>
+    <button id="retryWrong" class="button" disabled>只看错题</button>
+    <button id="showAll" class="button hidden">显示全部</button>
+    <button id="export" class="button" title="把当前答案、错题和提交状态保存为 JSON 文件，便于备份或换浏览器继续。" aria-label="导出答题记录：下载当前答案和错题的 JSON 文件" disabled>导出答题记录</button>
+    <button class="button" onclick="window.print()">打印</button>
+  </div>
+  <div id="status" class="status">支持判断题、单选题和多选题。答题记录只保存在当前浏览器；需要迁移时请导出。</div>
+  <div id="summary" class="summary hidden"></div>
+  <div id="questions" class="empty">尚未载入题库</div>
+</section></main>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id), els={file:$('bankFile'),drop:$('bankDrop'),record:$('recordFile'),title:$('title'),meta:$('meta'),status:$('status'),summary:$('summary'),questions:$('questions'),submit:$('submit'),retry:$('retryWrong'),all:$('showAll'),export:$('export')};
+let bank=null, wrong=new Set(), submitted=false;
+const allowedTypes=new Set(['判断','单选','多选']);
+function assertBank(x){
+  if(!x||x.schemaVersion!==1||typeof x.id!=='string'||!x.id.trim()||typeof x.title!=='string'||!Array.isArray(x.questions)||!x.questions.length)throw Error('题库结构不完整');
+  const ids=new Set();
+  x.questions.forEach((q,i)=>{if(!q||typeof q.id!=='string'||ids.has(q.id)||!allowedTypes.has(q.type)||typeof q.stem!=='string'||!q.stem.trim()||!Array.isArray(q.options)||q.options.length<2||!Array.isArray(q.answer)||!q.answer.length||typeof q.explanation!=='string'||!q.explanation.trim()||!q.source||typeof q.source.file!=='string'||!q.source.file.trim()||typeof q.source.location!=='string'||!q.source.location.trim())throw Error('第 '+(i+1)+' 题字段不完整');ids.add(q.id);
+    const keys=new Set();q.options.forEach(o=>{if(!o||typeof o.key!=='string'||keys.has(o.key)||typeof o.text!=='string')throw Error('第 '+(i+1)+' 题选项无效');keys.add(o.key)});if(q.answer.some(a=>!keys.has(a))||q.answer.length!==new Set(q.answer).size)throw Error('第 '+(i+1)+' 题答案无效');if(q.type!=='多选'&&q.answer.length!==1)throw Error('第 '+(i+1)+' 题答案数量与题型不符');
+  });return x;
+}
+const escapeKey=s=>encodeURIComponent(s).replace(/%/g,'_');
+const storageKey=()=>bank?'university-study-quiz:'+escapeKey(bank.id):'';
+function loadSaved(){try{return JSON.parse(localStorage.getItem(storageKey())||'{}')}catch{return {}}}
+function save(){if(!bank)return;const answers={};bank.questions.forEach(q=>{const picked=[...document.querySelectorAll('[name="q-'+CSS.escape(q.id)+'"]:checked')].map(x=>x.value);if(picked.length)answers[q.id]=picked});localStorage.setItem(storageKey(),JSON.stringify({schemaVersion:1,bankId:bank.id,updatedAt:new Date().toISOString(),answers,wrong:[...wrong],submitted}))}
+function same(a,b){return a.length===b.length&&[...a].sort().every((x,i)=>x===[...b].sort()[i])}
+function render(onlyWrong=false){const saved=loadSaved(), frag=document.createDocumentFragment();els.questions.className='';els.questions.textContent='';bank.questions.forEach((q,i)=>{const section=document.createElement('section');section.className='question';section.dataset.id=q.id;if(onlyWrong&&!wrong.has(q.id))section.classList.add('hidden');const h=document.createElement('h2');h.textContent=(i+1)+'. '+q.stem+(q.type==='多选'?'（多选）':'');section.append(h);q.options.forEach(o=>{const label=document.createElement('label');label.className='option';const input=document.createElement('input');input.type=q.type==='多选'?'checkbox':'radio';input.name='q-'+q.id;input.value=o.key;if((saved.answers?.[q.id]||[]).includes(o.key))input.checked=true;label.append(input,document.createTextNode(' '+o.key+'. '+o.text));section.append(label)});const result=document.createElement('div');result.className='result hidden';result.dataset.result='';section.append(result);frag.append(section)});els.questions.append(frag);if(submitted)grade(false)}
+function grade(persist=true){wrong.clear();let answered=0,correct=0;bank.questions.forEach(q=>{const box=els.questions.querySelector('[data-id="'+CSS.escape(q.id)+'"]'),picked=[...box.querySelectorAll('input:checked')].map(x=>x.value),ok=picked.length>0&&same(picked,q.answer),res=box.querySelector('[data-result]');if(picked.length)answered++;if(ok)correct++;else if(picked.length)wrong.add(q.id);res.className='result '+(ok?'correct':'incorrect');res.textContent=(ok?'正确。':picked.length?'答案：'+q.answer.join('、')+'。':'未作答。答案：'+q.answer.join('、')+'。')+q.explanation+' 依据：'+q.source.file+'，'+q.source.location+'。'});submitted=true;els.summary.classList.remove('hidden');els.summary.textContent='';[['得分',correct+' / '+bank.questions.length],['已答',answered+' / '+bank.questions.length],['错题',String(wrong.size)]].forEach(([a,b])=>{const d=document.createElement('div'),s=document.createElement('strong');s.textContent=b;d.append(s,document.createElement('br'),document.createTextNode(a));els.summary.append(d)});els.retry.disabled=!wrong.size;els.export.disabled=false;if(persist)save()}
+function renderMeta(){els.meta.textContent='';const list=document.createElement('div');list.className='meta-list';[['题库版本',bank.version||'未标明'],['适用范围',bank.scope||'未标明'],['依据来源',bank.sources?.length?bank.sources.join('；'):'未标明']].forEach(([label,value])=>{const row=document.createElement('div'),key=document.createElement('strong'),text=document.createElement('span');row.className='meta-row';key.textContent=label;key.append(document.createTextNode('：'));text.textContent=value;row.append(key,text);list.append(row)});els.meta.append(list)}
+async function loadBankFile(file){try{if(!file)return;if(!/\.json$/i.test(file.name)&&file.type!=='application/json')throw Error('请选择 JSON 题库文件');bank=assertBank(JSON.parse(await file.text()));wrong=new Set(loadSaved().wrong||[]);submitted=!!loadSaved().submitted;els.title.textContent=bank.title;renderMeta();els.status.textContent='已载入 '+bank.questions.length+' 道题。当前文件：'+file.name;els.submit.disabled=false;els.export.disabled=false;els.retry.disabled=!wrong.size;render()}catch(e){bank=null;els.status.textContent='无法载入：'+e.message;els.submit.disabled=true;els.export.disabled=true;els.questions.textContent='题库未载入';els.questions.className='empty'}}
+els.file.addEventListener('change',()=>loadBankFile(els.file.files[0]));
+['dragenter','dragover'].forEach(type=>els.drop.addEventListener(type,e=>{e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect='copy';els.drop.classList.add('dragover')}));['dragleave','drop'].forEach(type=>els.drop.addEventListener(type,e=>{e.preventDefault();els.drop.classList.remove('dragover')}));els.drop.addEventListener('drop',e=>loadBankFile(e.dataTransfer&&e.dataTransfer.files[0]));els.drop.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();els.file.click()}});
+els.record.addEventListener('change',async()=>{try{if(!bank)throw Error('请先选择对应题库');const data=JSON.parse(await els.record.files[0].text());if(data.schemaVersion!==1||data.bankId!==bank.id||typeof data.answers!=='object')throw Error('答题记录与当前题库不匹配');localStorage.setItem(storageKey(),JSON.stringify(data));wrong=new Set(data.wrong||[]);submitted=!!data.submitted;render();els.status.textContent='答题记录已导入。'}catch(e){els.status.textContent='无法导入：'+e.message}});
+els.submit.addEventListener('click',()=>grade());els.retry.addEventListener('click',()=>{render(true);els.retry.classList.add('hidden');els.all.classList.remove('hidden')});els.all.addEventListener('click',()=>{render(false);els.all.classList.add('hidden');els.retry.classList.remove('hidden')});
+els.export.addEventListener('click',()=>{if(!bank)return;save();const payload=localStorage.getItem(storageKey()),blob=new Blob([payload],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=bank.id+'-答题记录.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
+})();
+</script>
+</body></html>
